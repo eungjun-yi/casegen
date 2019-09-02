@@ -2,19 +2,21 @@ package im.toss.util.casegen
 
 import kotlin.reflect.KClass
 import kotlin.reflect.full.isSubclassOf
+import kotlin.reflect.typeOf
 
 interface SpecHelper {
     fun <T> anyOf(values: Iterable<T>): T
-    fun <T: Any> any(klass: KClass<T>): T
+    fun <T> any(klass: KClass<*>, isNullable: Boolean): T
 }
 
-inline fun <reified U: Any> SpecHelper.any() = this.any(U::class)
+@UseExperimental(ExperimentalStdlibApi::class)
+inline fun <reified U> SpecHelper.any(): U = this.any(U::class, typeOf<U>().isMarkedNullable)
 inline fun <reified U> SpecHelper.anyOf(vararg values:U) = this.anyOf(values.toList())
 
 internal class Permutator<T>(val spec: SpecHelper.() -> T): SpecHelper {
     private val parameters = mutableListOf<Iterable<*>>()
-    override fun <U: Any> any(klass: KClass<U>): U {
-        val elements = extractElements(klass)
+    override fun <U> any(klass: KClass<*>, isNullable: Boolean): U {
+        val elements = extractElements<U>(klass, isNullable)
         parameters.add(elements)
         return elements.first()
     }
@@ -25,14 +27,19 @@ internal class Permutator<T>(val spec: SpecHelper.() -> T): SpecHelper {
     }
 
     @Suppress("UNCHECKED_CAST")
-    private fun <U: Any> extractElements(klass: KClass<U>): Iterable<U> {
-        return when(val elements = klass.java.enumConstants) {
+    private fun <U> extractElements(klass: KClass<*>, isNullable: Boolean): Iterable<U> {
+        val result = when(val elements = klass.java.enumConstants) {
             null -> if (klass.isSubclassOf(Boolean::class)) {
                 listOf(false as U, true as U)
             } else {
                 throw UnsupportedOperationException()
             }
-            else -> elements.toList()
+            else -> elements.map { it as U }.toList()
+        }
+        return if (isNullable) {
+            listOf(null as U) + result
+        } else {
+            result
         }
     }
 
@@ -51,7 +58,7 @@ internal class Permutator<T>(val spec: SpecHelper.() -> T): SpecHelper {
     class Arguments(arguments: List<Any?>): SpecHelper {
         private val iterator = arguments.iterator()
 
-        override fun <T : Any> any(klass: KClass<T>): T {
+        override fun <T> any(klass: KClass<*>, isNullable: Boolean): T {
             return iterator.next() as T
         }
 

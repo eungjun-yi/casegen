@@ -3,6 +3,7 @@ package im.toss.util.casegen
 import im.toss.test.equalsTo
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import kotlin.reflect.typeOf
 
 class CaseGenTest {
     @Test
@@ -59,12 +60,34 @@ class CaseGenTest {
     }
 
     @Test
+    fun testNullableEnum() {
+        data class Foo(val a: Bar?)
+        cases {
+            Foo(any())
+        }.toSet().equalsTo(
+                setOf(Foo(null), Foo(Bar.A), Foo(Bar.B))
+        )
+    }
+
+
+    @Test
     fun testBoolean() {
         data class Foo(val a: Boolean)
         cases {
             Foo(any())
         }.toSet().equalsTo(
             setOf(Foo(false), Foo(true))
+        )
+    }
+
+    @ExperimentalStdlibApi
+    @Test
+    fun testNullableBoolean() {
+        data class Foo(val a: Boolean?)
+        cases {
+            Foo(any())
+        }.toSet().equalsTo(
+                setOf(Foo(null), Foo(false), Foo(true))
         )
     }
 
