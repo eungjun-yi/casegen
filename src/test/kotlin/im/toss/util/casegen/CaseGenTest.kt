@@ -92,6 +92,16 @@ class CaseGenTest {
     }
 
     @Test
+    fun testString() {
+        data class Foo(val a: String)
+        cases {
+            Foo(any())
+        }.toSet().equalsTo(
+            setOf(Foo(""), Foo(" "), Foo("casegen"))
+        )
+    }
+
+    @Test
     fun testUnsupportedType() {
         data class Foo(val a: Long)
         assertThrows<UnsupportedOperationException> {

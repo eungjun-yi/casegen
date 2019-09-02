@@ -29,10 +29,10 @@ internal class Permutator<T>(val spec: SpecHelper.() -> T): SpecHelper {
     @Suppress("UNCHECKED_CAST")
     private fun <U> extractElements(klass: KClass<*>, isNullable: Boolean): Iterable<U> {
         val result = when(val elements = klass.java.enumConstants) {
-            null -> if (klass.isSubclassOf(Boolean::class)) {
-                listOf(false as U, true as U)
-            } else {
-                throw UnsupportedOperationException()
+            null -> when {
+                klass.isSubclassOf(Boolean::class) -> listOf(false as U, true as U)
+                klass.isSubclassOf(String::class) -> listOf("" as U, " " as U, "casegen" as U)
+                else -> throw UnsupportedOperationException()
             }
             else -> elements.map { it as U }.toList()
         }
